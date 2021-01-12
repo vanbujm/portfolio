@@ -10,10 +10,8 @@ export default {
   argTypes: {},
 } as Meta;
 
-const Template: Story<{}> = (args) => <SpookyText {...args} />;
+const Template: Story<{}> = (args) => (
+  <SpookyText {...args}>Spooky Text</SpookyText>
+);
 
 export const Primary = Template.bind({});
-Primary.args = {
-  primary: true,
-  label: 'Spooky Text',
-};

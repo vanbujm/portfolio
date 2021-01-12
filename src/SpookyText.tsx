@@ -1,70 +1,69 @@
 import React, { useRef } from 'react';
 import styled from '@emotion/styled';
-import { motion } from 'framer-motion';
-import { useRecoilValue } from 'recoil';
-import { mouseState } from './atoms/mouse';
+import { motion, useTransform } from 'framer-motion';
+import { useBoundingBox } from './mouseTransforms';
 
-const BaseText = motion.p;
+const BaseText = motion.div;
 
 const GlitchText = styled(BaseText)`
+  display: inline-block;
   position: absolute;
   top: 0;
   margin: 0;
 
-  &:first-child {
+  &:first-of-type {
     color: #e20000;
-    top: 0;
-  }
-
-  &:nth-child(2) {
-    color: #000;
-    clip-path: polygon(0 0, 100% 0, 100% 66%, 0 66%);
   }
 `;
 
-const TextContainer = styled.div`
+const TextContainer = styled.div<{ size: number }>`
   font-family: 'Arial', serif;
   position: relative;
-  width: 100%;
+  display: inline-block;
+  width: ${(props) => `${props.size * 0.6}rem`};
 `;
 
-const calculateDistance = (elem: any, mouseX: number, mouseY: number) => {
-  console.log(elem);
-  return Math.floor(
-    Math.sqrt(
-      Math.pow(mouseX - (elem.left + elem.width / 2), 2) +
-        Math.pow(mouseY - (elem.top + elem.height / 2), 2),
-    ),
-  );
+type SpookyTextProps = {
+  children: string;
 };
 
-export const SpookyText: React.FC = () => {
-  const thisText = useRef(null);
-  const { x, y } = useRecoilValue(mouseState);
+export const SpookyText: React.FC<SpookyTextProps> = ({
+  children,
+  ...props
+}) => {
+  const thisText = useRef<HTMLParagraphElement>(null);
 
-  const distance = thisText.current
-    ? calculateDistance(
-        // @ts-ignore
-        thisText.current.getBoundingClientRect(),
-        x,
-        y,
-      )
-    : 0;
-
-  console.log({ x, y, distance });
-
-  const clampDistance = distance > 200 ? 100 : distance / 2;
+  const clampDistance = useBoundingBox(thisText);
+  const clipPath = useTransform(
+    clampDistance,
+    (currentClamp) =>
+      `polygon(0 0, 100% 0, 100% ${currentClamp}%, 0 ${currentClamp}%)`,
+  );
 
   return (
-    <TextContainer>
-      <GlitchText ref={thisText}>Spooky Text</GlitchText>
+    <TextContainer {...props} size={children.length}>
+      <GlitchText ref={thisText}>{children}</GlitchText>
       <GlitchText
-        animate={{
-          clipPath: `polygon(0 0, 100% 0, 100% ${clampDistance}%, 0 ${clampDistance}%)`,
+        style={{
+          clipPath,
         }}
       >
-        Spooky Text
+        {children}
       </GlitchText>
     </TextContainer>
   );
+};
+
+export const SplitSpookyText = ({ children }: any) => {
+  if (typeof children === 'string') {
+    const splitChildren = children.split(/(?=\s)/g);
+    return (
+      <div>
+        {splitChildren.map((subStr, i) => (
+          <SpookyText key={i}>{subStr}</SpookyText>
+        ))}
+      </div>
+    );
+  }
+  return <SpookyText>{children}</SpookyText>;
 };
